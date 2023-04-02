@@ -23,6 +23,6 @@ public class VoidImplTaskUnit extends TaskUnit
     {   }
 
     @Override
-    protected void corrupt()
+    protected void fail()
     {   }
 }

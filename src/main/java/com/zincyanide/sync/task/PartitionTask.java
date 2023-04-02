@@ -52,13 +52,12 @@ public class PartitionTask
         return this;
     }
 
-    void tryToUniteTasks()
+    void foldTasksIfExcess(int limit)
     {
         int tasksNum = tasksNum();
-        Integer workerNum = SyncPartitionTaskQueue.workerNum();
-        if(tasksNum > workerNum)
+        if(tasksNum > limit)
         {
-            Spliterator<TaskUnit>[] spliterators = splitTasks(tasks, workerNum);
+            Spliterator<TaskUnit>[] spliterators = splitTasks(tasks, limit);
             Collection<TaskUnit> taskUnits = new ArrayList<>();
             for(Spliterator<TaskUnit> spliterator : spliterators)
             {
@@ -72,7 +71,8 @@ public class PartitionTask
         }
     }
 
-    public void prepare(ExecutorService workers, CountDownLatch dispatcherLatch, CountDownLatch workersLatch, AtomicBoolean surprise)
+    public void prepare(ExecutorService workers, int workerNum,
+                        CountDownLatch dispatcherLatch, CountDownLatch workersLatch, AtomicBoolean surprise)
     {
         if(tasks == null || tasks.isEmpty())
             return;
@@ -80,7 +80,6 @@ public class PartitionTask
         this.workers = workers;
 
         int tasksNum = tasksNum();
-        Integer workerNum = SyncPartitionTaskQueue.workerNum();
         if(tasksNum > workerNum)
             throw new IndexOutOfBoundsException(
                     String.format("任务数量大于执行线程数，excepted le: %s, current: %s", workerNum, tasksNum));

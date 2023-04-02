@@ -1,5 +1,8 @@
 package com.zincyanide.sync.task;
 
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
@@ -8,51 +11,51 @@ import java.util.concurrent.TimeUnit;
 
 public class T_01_TaskQueue
 {
+    private static DefaultSyncPartitionTaskQueue syncPartitionTaskQueue;
+
+    @BeforeClass
+    public static void setup()
+    {
+        syncPartitionTaskQueue = new DefaultSyncPartitionTaskQueue();
+        syncPartitionTaskQueue.boot();
+    }
+
     @Test
     public void t_01_syncTaskWithoutUniteTasks() throws ExecutionException, InterruptedException
     {
-        DefaultSyncPartitionTaskQueue syncPartitionTaskQueue =
-                new DefaultSyncPartitionTaskQueue();
-
         PartitionTask partitionTask = new PartitionTask();
-        for (int i = 0; i < DefaultSyncPartitionTaskQueue.workerNum(); i++)
+        for (int i = 0; i < syncPartitionTaskQueue.workerNum(); i++)
         {
             final Integer fI = i;
             partitionTask.addTask(new VoidImplTaskUnit(() -> System.out.println(fI)));
         }
-        Future<?> future = syncPartitionTaskQueue.offer(partitionTask);
+        Future<Boolean> future = syncPartitionTaskQueue.offer(partitionTask);
 
-        System.out.println(future.get());
+        Assert.assertTrue(future.get());
     }
 
     @Test
     public void t_02_syncTaskWithUniteTasks() throws ExecutionException, InterruptedException
     {
-        DefaultSyncPartitionTaskQueue syncPartitionTaskQueue =
-                new DefaultSyncPartitionTaskQueue();
-
         PartitionTask partitionTask = new PartitionTask("t_02_syncTaskWithUniteTasks", null,
                 3000, TimeUnit.MILLISECONDS);
-        for (int i = 0; i < 3 * DefaultSyncPartitionTaskQueue.workerNum(); i++)
+        for (int i = 0; i < 3 * syncPartitionTaskQueue.workerNum(); i++)
         {
             final int fI = i;
             partitionTask.addTask(
                     new VoidImplTaskUnit(() -> System.out.println(
                             Thread.currentThread().getName()+" : "+fI)));
         }
-        Future<?> future = syncPartitionTaskQueue.offer(partitionTask);
+        Future<Boolean> future = syncPartitionTaskQueue.offer(partitionTask);
 
-        System.out.println(future.get());
+        Assert.assertTrue(future.get());
     }
 
     @Test
-    public void t_03_occurException() throws ExecutionException, InterruptedException
+    public void t_03_certainTaskOccurException() throws ExecutionException, InterruptedException
     {
-        DefaultSyncPartitionTaskQueue syncPartitionTaskQueue =
-                new DefaultSyncPartitionTaskQueue();
-
         PartitionTask partitionTask = new PartitionTask();
-        for (int i = 0; i < DefaultSyncPartitionTaskQueue.workerNum(); i++)
+        for (int i = 0; i < syncPartitionTaskQueue.workerNum(); i++)
         {
             final Integer fI = i;
             partitionTask.addTask(new VoidImplTaskUnit(() -> System.out.println(
@@ -64,8 +67,12 @@ public class T_01_TaskQueue
                     Thread.currentThread().getName()+" : "+111111);
         }));
 
-        System.out.println(syncPartitionTaskQueue.execute(partitionTask));
+        Assert.assertFalse(syncPartitionTaskQueue.execute(partitionTask));
     }
 
-
+    @AfterClass
+    public static void teardown()
+    {
+        syncPartitionTaskQueue.stop();
+    }
 }

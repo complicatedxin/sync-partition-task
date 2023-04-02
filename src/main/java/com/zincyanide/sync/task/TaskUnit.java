@@ -48,7 +48,7 @@ public abstract class TaskUnit implements Runnable
                 if(!surprise.get())
                     success();
                 else
-                    corrupt();
+                    fail();
 
             } catch (Exception any) {
                 any.printStackTrace();
@@ -56,7 +56,7 @@ public abstract class TaskUnit implements Runnable
                 surprise.set(true);
                 workersLatch.countDown();
                 dispatcherLatch.countDown();
-                corrupt();
+                fail();
 
             } finally {
                 postRun();
@@ -70,7 +70,7 @@ public abstract class TaskUnit implements Runnable
 
     protected abstract void success();
 
-    protected abstract void corrupt();
+    protected abstract void fail();
 
 
     void setDispatcherLatch(CountDownLatch dispatcherLatch)

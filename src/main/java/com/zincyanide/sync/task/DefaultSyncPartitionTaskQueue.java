@@ -2,6 +2,13 @@ package com.zincyanide.sync.task;
 
 public class DefaultSyncPartitionTaskQueue extends SyncPartitionTaskQueue
 {
+    public DefaultSyncPartitionTaskQueue()
+    {   }
+    public DefaultSyncPartitionTaskQueue(int queueCapacity, int workerNum)
+    {
+        super(queueCapacity, workerNum);
+    }
+
     @Override
     protected void preOffer(PartitionTask partitionTask)
     {   }
@@ -11,10 +18,10 @@ public class DefaultSyncPartitionTaskQueue extends SyncPartitionTaskQueue
     {   }
 
     @Override
-    protected void success()
+    protected void access()
     {   }
 
     @Override
-    protected void corrupt()
+    protected void disrupt()
     {   }
 }

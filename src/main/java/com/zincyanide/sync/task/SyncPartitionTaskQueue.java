@@ -1,47 +1,105 @@
 package com.zincyanide.sync.task;
 
+import com.sun.org.slf4j.internal.Logger;
+import com.sun.org.slf4j.internal.LoggerFactory;
+
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-//TODO instantial
 public abstract class SyncPartitionTaskQueue
 {
-    public static final Integer DEFAULT_QUEUE_CAPACITY = 100;
+    static final Logger logger =
+            LoggerFactory.getLogger(SyncPartitionTaskQueue.class);
 
-    public static final Integer DEFAULT_WORKER_NUM = 8;
+    private final int queueCapacity;
 
-    private static final Integer queueCapacity = DEFAULT_QUEUE_CAPACITY;
+    private final int workerNum;
 
-    private static final Integer workerNum = DEFAULT_WORKER_NUM;
+    private SyncPartitionTaskQueueConfigProperties config;
 
-    private static final ExecutorService dispatcher = new ThreadPoolExecutor(
-            1, 1,
-            0, TimeUnit.MILLISECONDS,
-            new ArrayBlockingQueue<>(queueCapacity),
-            Executors.defaultThreadFactory(),
-            new ThreadPoolExecutor.AbortPolicy()
-    );
+    private volatile ExecutorService dispatcher;
 
-    private static final ExecutorService workers = new ThreadPoolExecutor(
-            workerNum, workerNum,
-            60_000, TimeUnit.MILLISECONDS,
-            new ArrayBlockingQueue<>(workerNum),
-            Executors.defaultThreadFactory(),
-            new ThreadPoolExecutor.AbortPolicy()
-    );
+    private volatile ExecutorService workers;
+
+    public SyncPartitionTaskQueue()
+    {
+        this(new SyncPartitionTaskQueueConfigProperties());
+    }
+    public SyncPartitionTaskQueue(int queueCapacity, int workerNum)
+    {
+        this(queueCapacity, workerNum, new SyncPartitionTaskQueueConfigProperties());
+    }
+    public SyncPartitionTaskQueue(SyncPartitionTaskQueueConfigProperties config)
+    {
+        this(config.getQueueCapacity(), config.getWorkerNum(), config);
+    }
+    public SyncPartitionTaskQueue(int queueCapacity, int workerNum, SyncPartitionTaskQueueConfigProperties config)
+    {
+        this.queueCapacity = queueCapacity;
+        this.workerNum = workerNum;
+        this.config = config;
+    }
+
+    public void boot()
+    {
+        if(dispatcher == null)
+        {
+            synchronized (this)
+            {
+                if(dispatcher == null)
+                {
+                    dispatcher = new ThreadPoolExecutor(
+                            1, 1,
+                            0, TimeUnit.MILLISECONDS,
+                            new ArrayBlockingQueue<>(queueCapacity),
+                            Executors.defaultThreadFactory(),
+                            new ThreadPoolExecutor.AbortPolicy()
+                    );
+                    workers = new ThreadPoolExecutor(
+                            workerNum, workerNum,
+                            0, TimeUnit.MILLISECONDS,
+                            new ArrayBlockingQueue<>(workerNum),
+                            Executors.defaultThreadFactory(),
+                            new ThreadPoolExecutor.AbortPolicy()
+                    );
+                }
+            }
+            logger.debug("SyncPartitionTaskQueue started");
+        }
+        else if(dispatcher.isShutdown())
+            logger.warn("SyncPartitionTaskQueue had started, but shutdown now");
+        else
+            logger.warn("SyncPartitionTaskQueue is already started");
+    }
+
+    public void stop()
+    {
+        synchronized (this)
+        {
+            if(dispatcher != null && !dispatcher.isShutdown())
+            {
+                dispatcher.shutdown();
+                workers.shutdown();
+            }
+        }
+        logger.debug("SyncPartitionTaskQueue stopped");
+    }
 
     /**
      *  async execute
      */
     public Future<Boolean> offer(PartitionTask partitionTask)
     {
-        partitionTask.tryToUniteTasks();
+        if(!isStarting())
+            throw new RejectedExecutionException("task dispatcher is not starting");
+
+        if(config.getEnableAutoFoldTasks())
+            partitionTask.foldTasksIfExcess(workerNum);
 
         CountDownLatch dispatcherLatch = new CountDownLatch(partitionTask.tasksNum());
         CountDownLatch workersLatch = new CountDownLatch(1);
         AtomicBoolean surprise = new AtomicBoolean(false);
-
-        partitionTask.prepare(workers, dispatcherLatch, workersLatch, surprise);
+        partitionTask.prepare(workers, workerNum, dispatcherLatch, workersLatch, surprise);
 
         return dispatcher.submit(() -> {
 
@@ -53,9 +111,9 @@ public abstract class SyncPartitionTaskQueue
                     throw new TimeoutException("任务超时: " + partitionTask.getTaskName());
 
                 if(!surprise.get())
-                    success();
+                    access();
                 else
-                    corrupt();
+                    disrupt();
 
                 workersLatch.countDown();
                 return !surprise.get();
@@ -65,7 +123,7 @@ public abstract class SyncPartitionTaskQueue
 
                 surprise.set(true);
                 workersLatch.countDown();
-                corrupt();
+                disrupt();
                 return false;
             } finally {
                 postOffer();
@@ -92,26 +150,43 @@ public abstract class SyncPartitionTaskQueue
 
     protected abstract void postOffer();
 
-    protected abstract void success();
+    protected abstract void access();
 
-    protected abstract void corrupt();
+    protected abstract void disrupt();
 
-    public static Integer capacity()
+
+    public SyncPartitionTaskQueueConfigProperties getConfig()
+    {
+        return config;
+    }
+
+    public void setConfig(SyncPartitionTaskQueueConfigProperties config)
+    {
+        this.config = config;
+    }
+
+
+    public boolean isStarting()
+    {
+        return dispatcher != null && !dispatcher.isShutdown();
+    }
+
+    public Integer capacity()
     {
         return queueCapacity;
     }
 
-    public static Integer workerNum()
+    public Integer workerNum()
     {
         return workerNum;
     }
 
-    public static Integer size()
+    public Integer size()
     {
         return ((ThreadPoolExecutor) dispatcher).getQueue().size();
     }
 
-    public static Boolean idle()
+    public Boolean idle()
     {
         return size() == 0 && ((ThreadPoolExecutor) workers).getQueue().size() == 0;
     }
