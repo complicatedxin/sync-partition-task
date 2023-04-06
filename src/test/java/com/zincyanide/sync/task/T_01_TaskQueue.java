@@ -52,19 +52,20 @@ public class T_01_TaskQueue
     }
 
     @Test
-    public void t_03_certainTaskOccurException() throws ExecutionException, InterruptedException
+    public void t_03_certainTaskOccurException()
     {
         PartitionTask partitionTask = new PartitionTask();
         for (int i = 0; i < syncPartitionTaskQueue.workerNum(); i++)
         {
-            final Integer fI = i;
+            final int fI = i;
             partitionTask.addTask(new VoidImplTaskUnit(() -> System.out.println(
                     Thread.currentThread().getName()+" : "+fI)));
         }
         partitionTask.addTask(new VoidImplTaskUnit(() -> {
-            int i = 1 / 0;
+            String threadName = Thread.currentThread().getName();
             System.out.println(
-                    Thread.currentThread().getName()+" : "+111111);
+                    threadName +" : "+111111);
+            throw new RuntimeException(threadName+" occurs an exception");
         }));
 
         Assert.assertFalse(syncPartitionTaskQueue.execute(partitionTask));
