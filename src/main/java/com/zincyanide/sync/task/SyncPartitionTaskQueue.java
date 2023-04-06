@@ -1,7 +1,7 @@
 package com.zincyanide.sync.task;
 
-import com.sun.org.slf4j.internal.Logger;
-import com.sun.org.slf4j.internal.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public abstract class SyncPartitionTaskQueue
 {
     static final Logger logger =
-            LoggerFactory.getLogger(SyncPartitionTaskQueue.class);
+            LogManager.getLogger(SyncPartitionTaskQueue.class);
 
     private final int queueCapacity;
 
@@ -64,7 +64,7 @@ public abstract class SyncPartitionTaskQueue
                     );
                 }
             }
-            logger.debug("SyncPartitionTaskQueue started");
+            logger.info("SyncPartitionTaskQueue started");
         }
         else if(dispatcher.isShutdown())
             logger.warn("SyncPartitionTaskQueue had started, but shutdown now");
@@ -82,7 +82,7 @@ public abstract class SyncPartitionTaskQueue
                 workers.shutdown();
             }
         }
-        logger.debug("SyncPartitionTaskQueue stopped");
+        logger.info("SyncPartitionTaskQueue stopped");
     }
 
     /**
