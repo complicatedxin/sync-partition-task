@@ -16,7 +16,7 @@ public class T_01_TaskQueue
     @BeforeClass
     public static void setup()
     {
-        syncPartitionTaskQueue = new DefaultSyncPartitionTaskQueue();
+        syncPartitionTaskQueue = new DefaultSyncPartitionTaskQueue(SyncPartitionTaskQueueConfig.getDefault());
         syncPartitionTaskQueue.boot();
     }
 

@@ -2,11 +2,9 @@ package com.zincyanide.sync.task;
 
 public class DefaultSyncPartitionTaskQueue extends SyncPartitionTaskQueue
 {
-    public DefaultSyncPartitionTaskQueue()
-    {   }
-    public DefaultSyncPartitionTaskQueue(int queueCapacity, int workerNum)
+    public DefaultSyncPartitionTaskQueue(SyncPartitionTaskQueueConfig config)
     {
-        super(queueCapacity, workerNum);
+        super(config);
     }
 
     @Override

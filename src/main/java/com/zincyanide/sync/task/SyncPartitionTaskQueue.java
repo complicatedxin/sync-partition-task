@@ -15,28 +15,16 @@ public abstract class SyncPartitionTaskQueue
 
     private final int workerNum;
 
-    private SyncPartitionTaskQueueConfigProperties config;
+    private SyncPartitionTaskQueueConfig config;
 
     private volatile ExecutorService dispatcher;
 
     private volatile ExecutorService workers;
 
-    public SyncPartitionTaskQueue()
+    public SyncPartitionTaskQueue(SyncPartitionTaskQueueConfig config)
     {
-        this(new SyncPartitionTaskQueueConfigProperties());
-    }
-    public SyncPartitionTaskQueue(int queueCapacity, int workerNum)
-    {
-        this(queueCapacity, workerNum, new SyncPartitionTaskQueueConfigProperties());
-    }
-    public SyncPartitionTaskQueue(SyncPartitionTaskQueueConfigProperties config)
-    {
-        this(config.getQueueCapacity(), config.getWorkerNum(), config);
-    }
-    public SyncPartitionTaskQueue(int queueCapacity, int workerNum, SyncPartitionTaskQueueConfigProperties config)
-    {
-        this.queueCapacity = queueCapacity;
-        this.workerNum = workerNum;
+        this.queueCapacity = config.getQueueCapacity();
+        this.workerNum = config.getWorkerNum();
         this.config = config;
     }
 
@@ -155,12 +143,12 @@ public abstract class SyncPartitionTaskQueue
     protected abstract void disrupt();
 
 
-    public SyncPartitionTaskQueueConfigProperties getConfig()
+    public SyncPartitionTaskQueueConfig getConfig()
     {
         return config;
     }
 
-    public void setConfig(SyncPartitionTaskQueueConfigProperties config)
+    public void setConfig(SyncPartitionTaskQueueConfig config)
     {
         this.config = config;
     }

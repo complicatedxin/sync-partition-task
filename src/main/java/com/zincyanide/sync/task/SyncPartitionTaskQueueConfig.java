@@ -1,29 +1,37 @@
 package com.zincyanide.sync.task;
 
-public class SyncPartitionTaskQueueConfigProperties
+import com.zincyanide.sync.task.util.SyncPartitionTaskQueueConfigBuilder;
+
+public class SyncPartitionTaskQueueConfig
 {
     public static final int DEFAULT_QUEUE_CAPACITY = 200;
     public static final int DEFAULT_WORKER_NUM = 8;
 
-    private Integer queueCapacity;
+    private int queueCapacity;
 
-    private Integer workerNum;
+    private int workerNum;
 
     /**
      *  folding when tasks is excessive for the number of workers
      */
-    private Boolean enableAutoFoldTasks;
+    private boolean enableAutoFoldTasks;
 
     /**
      *  default config
      */
-    public SyncPartitionTaskQueueConfigProperties()
+    public static final SyncPartitionTaskQueueConfig getDefault()
     {
-        queueCapacity = DEFAULT_QUEUE_CAPACITY;
-        workerNum = DEFAULT_WORKER_NUM;
-        enableAutoFoldTasks = true;
+        SyncPartitionTaskQueueConfig config = new SyncPartitionTaskQueueConfig();
+        config.setQueueCapacity(DEFAULT_QUEUE_CAPACITY);
+        config.setWorkerNum(DEFAULT_WORKER_NUM);
+        config.setEnableAutoFoldTasks(true);
+        return config;
     }
 
+    public static final SyncPartitionTaskQueueConfigBuilder builder()
+    {
+        return new SyncPartitionTaskQueueConfigBuilder();
+    }
 
 
 
