@@ -5,11 +5,16 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class SyncPartitionTaskQueue
 {
     static final Logger logger =
             LogManager.getLogger(SyncPartitionTaskQueue.class);
+
+    private static final int RUNNING_INSTANCE_COUNT_LIMIT = 6;
+
+    private static final AtomicInteger runningInstanceCount = new AtomicInteger(0);
 
     private final int queueCapacity;
 
@@ -32,6 +37,14 @@ public abstract class SyncPartitionTaskQueue
 
     public void boot()
     {
+        if(runningInstanceCount.get() >= RUNNING_INSTANCE_COUNT_LIMIT)
+        {
+            String resourceType = SyncPartitionTaskQueue.class.getSimpleName();
+            logger.error("You are creating too many " + resourceType + " instances. " +
+                    resourceType + " is a shared resource that must be reused across the JVM, " +
+                    "so that only a few instances are created.");
+        }
+
         if(dispatcher == null)
         {
             synchronized (this)
@@ -52,6 +65,7 @@ public abstract class SyncPartitionTaskQueue
                             Executors.defaultThreadFactory(),
                             new ThreadPoolExecutor.AbortPolicy()
                     );
+                    runningInstanceCount.getAndIncrement();
                 }
             }
             logger.info("SyncPartitionTaskQueue started");
@@ -70,6 +84,7 @@ public abstract class SyncPartitionTaskQueue
             {
                 dispatcher.shutdown();
                 workers.shutdown();
+                runningInstanceCount.getAndDecrement();
             }
         }
         logger.info("SyncPartitionTaskQueue stopped");
