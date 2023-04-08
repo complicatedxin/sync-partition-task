@@ -21,6 +21,8 @@ public abstract class SyncPartitionTaskQueue
 
     private volatile ExecutorService workers;
 
+    private ArrayBlockingQueue<Runnable> dispatcherQueue;
+
     public SyncPartitionTaskQueue(SyncPartitionTaskQueueConfig config)
     {
         this.queueCapacity = config.getQueueCapacity();
@@ -39,14 +41,14 @@ public abstract class SyncPartitionTaskQueue
                     dispatcher = new ThreadPoolExecutor(
                             1, 1,
                             0, TimeUnit.MILLISECONDS,
-                            new ArrayBlockingQueue<>(queueCapacity),
+                            dispatcherQueue = new ArrayBlockingQueue<>(queueCapacity),
                             Executors.defaultThreadFactory(),
                             new ThreadPoolExecutor.AbortPolicy()
                     );
                     workers = new ThreadPoolExecutor(
                             workerNum, workerNum,
                             0, TimeUnit.MILLISECONDS,
-                            new ArrayBlockingQueue<>(workerNum),
+                            new ArrayBlockingQueue<>(1),
                             Executors.defaultThreadFactory(),
                             new ThreadPoolExecutor.AbortPolicy()
                     );
@@ -171,11 +173,16 @@ public abstract class SyncPartitionTaskQueue
 
     public Integer size()
     {
-        return ((ThreadPoolExecutor) dispatcher).getQueue().size();
+        return dispatcherQueue.size();
     }
 
     public Boolean idle()
     {
         return size() == 0 && ((ThreadPoolExecutor) workers).getQueue().size() == 0;
+    }
+
+    public Integer remainingCapacity()
+    {
+        return dispatcherQueue.remainingCapacity();
     }
 }
