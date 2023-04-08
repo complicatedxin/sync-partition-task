@@ -48,7 +48,7 @@ public abstract class SyncPartitionTaskQueue
                     workers = new ThreadPoolExecutor(
                             workerNum, workerNum,
                             0, TimeUnit.MILLISECONDS,
-                            new ArrayBlockingQueue<>(1),
+                            new ArrayBlockingQueue<>(workerNum),
                             Executors.defaultThreadFactory(),
                             new ThreadPoolExecutor.AbortPolicy()
                     );
