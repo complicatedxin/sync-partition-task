@@ -109,7 +109,7 @@ public abstract class SyncPartitionTaskQueue
         return dispatcher.submit(() -> {
 
             try {
-                preOffer(partitionTask);
+                preOffer();
                 partitionTask.execute();
 
                 if(!dispatcherLatch.await(partitionTask.getTimeout(), partitionTask.getTimeoutUnit()))
@@ -151,7 +151,7 @@ public abstract class SyncPartitionTaskQueue
         }
     }
 
-    protected abstract void preOffer(PartitionTask partitionTask);
+    protected abstract void preOffer();
 
     protected abstract void postOffer();
 

@@ -54,24 +54,23 @@ public class PartitionTask
 
     void foldTasksIfExcess(int limit)
     {
-        int tasksNum = tasksNum();
-        if(tasksNum > limit)
+        if(tasksNum() <= limit)
+            return;
+
+        Spliterator<TaskUnit>[] spliterators = splitTasks(tasks, limit);
+        Collection<TaskUnit> taskUnits = new ArrayList<>();
+        for(Spliterator<TaskUnit> spliterator : spliterators)
         {
-            Spliterator<TaskUnit>[] spliterators = splitTasks(tasks, limit);
-            Collection<TaskUnit> taskUnits = new ArrayList<>();
-            for(Spliterator<TaskUnit> spliterator : spliterators)
-            {
-                if(spliterator == null)
-                    continue;
-                Collection<TaskUnit> tasks = new ArrayList<>();
-                spliterator.forEachRemaining(tasks::add);
-                taskUnits.add(tasks.stream().reduce(TaskUnit::unite).get());
-            }
-            this.tasks = taskUnits;
+            if(spliterator == null)
+                continue;
+            Collection<TaskUnit> tasks = new ArrayList<>();
+            spliterator.forEachRemaining(tasks::add);
+            taskUnits.add(tasks.stream().reduce(TaskUnit::unite).get());
         }
+        this.tasks = taskUnits;
     }
 
-    public void prepare(ExecutorService workers, int workerNum,
+    void prepare(ExecutorService workers, int workerNum,
                         CountDownLatch dispatcherLatch, CountDownLatch workersLatch, AtomicBoolean surprise)
     {
         if(tasks == null || tasks.isEmpty())
@@ -92,7 +91,6 @@ public class PartitionTask
         }
     }
 
-    @SuppressWarnings({"SuspiciousSystemArraycopy", "unchecked"})
     private Spliterator<TaskUnit>[] splitTasks(Collection<TaskUnit> tasks, int maxPieceNum)
     {
         if(splitStrategy != null)
@@ -103,6 +101,12 @@ public class PartitionTask
             return spliterators;
         }
 
+        return halve(tasks, maxPieceNum);
+    }
+
+    @SuppressWarnings({"SuspiciousSystemArraycopy", "unchecked"})
+    private Spliterator<TaskUnit>[] halve(Collection<TaskUnit> tasks, int maxPieceNum)
+    {
         Spliterator<?>[] deque = new Spliterator[Integer.highestOneBit(maxPieceNum)];
         int p1 = -1;
         int p2 = deque.length;
@@ -149,7 +153,7 @@ public class PartitionTask
         return spliterators;
     }
 
-    public void execute()
+    void execute()
     {
         for (TaskUnit task : tasks)
         {
@@ -175,6 +179,16 @@ public class PartitionTask
     public int tasksNum()
     {
         return tasks.size();
+    }
+
+    public void setTimeout(int timeout)
+    {
+        this.timeout = timeout;
+    }
+
+    public void setTimeoutUnit(TimeUnit timeoutUnit)
+    {
+        this.timeoutUnit = timeoutUnit;
     }
 
     public void setSplitStrategy(BiFunction<Collection<TaskUnit>, Integer, Spliterator<TaskUnit>[]> splitStrategy)

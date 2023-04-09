@@ -23,7 +23,7 @@ public abstract class TaskUnit implements Runnable
     {
         if(!this.getClass().equals(task.getClass()))
             throw new UnsupportedOperationException("cannot unite the different type tasks");
-        runner = runner.andThen(task.getRunner());
+        runner = runner.andThen(task.runner);
         return this;
     }
 
@@ -33,7 +33,7 @@ public abstract class TaskUnit implements Runnable
         oversee(runner).run();
     }
 
-    public Runnable oversee(Runnable runnable)
+    Runnable oversee(Runnable runnable)
     {
         return () -> {
             if (surprise.get())
@@ -86,10 +86,5 @@ public abstract class TaskUnit implements Runnable
     void setSurprise(AtomicBoolean surprise)
     {
         this.surprise = surprise;
-    }
-
-    public TaskRunner getRunner()
-    {
-        return runner;
     }
 }

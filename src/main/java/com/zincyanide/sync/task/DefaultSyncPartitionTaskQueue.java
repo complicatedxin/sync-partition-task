@@ -8,7 +8,7 @@ public class DefaultSyncPartitionTaskQueue extends SyncPartitionTaskQueue
     }
 
     @Override
-    protected void preOffer(PartitionTask partitionTask)
+    protected void preOffer()
     {   }
 
     @Override
